@@ -61,6 +61,19 @@
             border-color: #616e80;  
             color: #e2e8f0;  
         }  
+        .progress-bar-container {  
+            width: 100%;  
+            height: 8px;  
+            background-color: #e5e7eb;  
+            border-radius: 9999px;  
+            margin-bottom: 1.5rem;  
+            overflow: hidden;  
+        }  
+        .progress-bar {  
+            height: 100%;  
+            background-color: #3b82f6;  
+            transition: width 0.3s ease-in-out;  
+        }  
     </style>  
 </head>  
 <body>  
@@ -69,13 +82,14 @@
     <div id="start-screen" class="text-center transition-opacity duration-500 ease-in-out">  
         <h1 class="text-2xl font-bold mb-2 text-gray-800">PSCI 71101 Longitudinal Lab I Quiz 2</h1>  
         <p class="text-gray-600 mb-4">A Study Tool for PSCI 71101 Longitudinal Lab I</p>  
-        <p class="text-gray-600 mb-8">Test your knowledge of Top Drugs List with different modes. Each quiz consists of 10 questions.</p>  
+        <p class="text-gray-600 mb-8">Test your knowledge of Top Drugs List with different modes. Each mode has a question pool of 20. Select your quiz length below to begin.</p>  
         <div class="flex flex-col space-y-4">  
             <button id="dark-mode-toggle" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full shadow-md hover:bg-gray-300 focus:outline-none transition-colors duration-200">Toggle Dark Mode</button>  
               
             <div class="flex flex-col items-center space-y-2 mt-4">  
                 <label for="question-count-select" class="text-gray-700 font-semibold">Select Quiz Length:</label>  
                 <select id="question-count-select" class="bg-gray-200 border border-gray-300 text-gray-800 rounded-lg p-2 w-full max-w-[200px] focus:outline-none focus:border-blue-500 transition-colors duration-200">  
+                    <option value="5">5 Questions</option>  
                     <option value="10">10 Questions</option>  
                     <option value="20">20 Questions</option>  
                 </select>  
@@ -87,9 +101,12 @@
     </div>  
   
     <div id="quiz-screen" class="hidden transition-opacity duration-500 ease-in-out">  
-        <div class="flex justify-between items-center mb-6">  
+        <div class="flex justify-between items-center mb-4">  
             <p class="text-gray-500 text-sm">Question <span id="question-number">1</span> of <span id="total-questions"></span></p>  
             <p class="text-gray-500 text-sm">Score: <span id="score">0</span></p>  
+        </div>  
+        <div class="progress-bar-container">  
+            <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>  
         </div>  
         <h2 id="question-text" class="text-xl font-semibold mb-6 text-gray-700"></h2>  
         <div id="options-container" class="grid grid-cols-1 gap-4">  
@@ -188,6 +205,7 @@
         const finalScoreEl = document.getElementById('final-score');  
         const congratulatoryMessageEl = document.getElementById('congratulatory-message');  
         const restartQuizBtn = document.getElementById('restart-quiz');  
+        const progressBarEl = document.getElementById('progress-bar');  
   
         // --- GAME STATE VARIABLES ---  
         let currentQuestions = [];  
@@ -269,6 +287,8 @@
                 shortAnswerInput.disabled = false;  
                 submitAnswerBtn.disabled = false;  
             }  
+              
+            updateProgressBar();  
         }  
           
         function handleAnswer(userAnswer) {  
@@ -345,6 +365,11 @@
             } else {  
                 congratulatoryMessageEl.classList.add('hidden');  
             }  
+        }  
+          
+        function updateProgressBar() {  
+            const progress = (currentQuestionIndex / currentQuestions.length) * 100;  
+            progressBarEl.style.width = `${progress}%`;  
         }  
   
         // --- EVENT LISTENERS ---  
