@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Quiz</title>
-    <!-- Use Tailwind CSS for rapid styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
@@ -155,8 +154,7 @@
         </div>
         <h2 id="question-text" class="text-xl font-semibold mb-6 text-gray-700"></h2>
         <div id="options-container" class="grid grid-cols-1 gap-4">
-            <!-- Multiple choice options will be injected here -->
-        </div>
+            </div>
         <div id="short-answer-container" class="hidden">
             <input type="text" id="short-answer-input" placeholder="Type your answer here..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition-colors duration-200">
             <button id="submit-answer" class="mt-4 w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors duration-200">Submit</button>
@@ -172,8 +170,12 @@
     <div id="results-screen" class="hidden text-center transition-opacity duration-500 ease-in-out">
         <h2 class="text-3xl font-bold mb-4 text-gray-800">Quiz Complete!</h2>
         <p class="text-gray-600 mb-2">Your final score is:</p>
-        <p id="final-score" class="text-5xl font-extrabold text-blue-600 mb-6"></p>
-        <p id="congratulatory-message" class="text-xl font-semibold text-green-600 mb-8 hidden"></p>
+        <div class="flex justify-center items-center gap-2">
+            <span id="flame-left" class="hidden text-3xl animate-pulse-once">🔥</span>
+            <p id="final-score" class="text-5xl font-extrabold text-blue-600"></p>
+            <span id="flame-right" class="hidden text-3xl animate-pulse-once">🔥</span>
+        </div>
+        <p id="congratulatory-message" class="text-xl font-semibold text-green-600 my-8 hidden"></p>
         <button id="restart-quiz" class="bg-purple-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-75 transition-colors duration-200">Restart Quiz</button>
     </div>
 </div>
@@ -304,12 +306,15 @@
         const progressBarEl = document.getElementById('progress-bar');
         const fireFlameEl = document.getElementById('fire-flame');
         const userInfoEl = document.getElementById('user-info');
+        const flameLeftEl = document.getElementById('flame-left');
+        const flameRightEl = document.getElementById('flame-right');
 
         // --- GAME STATE VARIABLES ---
         let currentQuestions = [];
         let currentQuestionIndex = 0;
         let score = 0;
         let quizMode = '';
+        let hasFlame = false;
 
         // --- Firebase references
         const userCollectionRef = (userId) => collection(db, 'artifacts', appId, 'users', userId, 'quizzes');
@@ -385,11 +390,14 @@
 
             currentQuestionIndex = 0;
             score = 0;
+            hasFlame = false;
             questionNumberEl.textContent = 1;
             totalQuestionsEl.textContent = currentQuestions.length;
             scoreEl.textContent = score;
             fireFlameEl.classList.add('hidden');
             fireFlameEl.style.setProperty('--flame-scale', 1);
+            flameLeftEl.classList.add('hidden');
+            flameRightEl.classList.add('hidden');
 
             startScreen.classList.add('hidden');
             quizScreen.classList.remove('hidden');
@@ -434,7 +442,11 @@
 
                     if (currentQuestion.answered) {
                         button.disabled = true;
-                        if (Array.isArray(currentQuestion.answer) ? currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(option.toLowerCase().trim()) : option.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim()) {
+                        const isCorrectOption = Array.isArray(currentQuestion.answer) 
+                            ? currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(option.toLowerCase().trim()) 
+                            : option.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim();
+
+                        if (isCorrectOption) {
                             button.classList.add('correct');
                         }
                         if (currentQuestion.userAnswer === option && !currentQuestion.correct) {
@@ -455,7 +467,8 @@
                          feedbackEl.classList.add('text-green-600');
                          feedbackEl.classList.remove('text-red-600');
                     } else {
-                         feedbackEl.textContent = `Incorrect! The correct answer was: ${Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer}`;
+                         const correctAnswers = Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer;
+                         feedbackEl.textContent = `Incorrect! The correct answer was: ${correctAnswers}`;
                          feedbackEl.classList.add('text-red-600');
                          feedbackEl.classList.remove('text-green-600');
                     }
@@ -471,13 +484,9 @@
             }
 
             const lowerUserAnswer = userAnswer.toLowerCase().trim();
-            let isCorrect = false;
-
-            if (Array.isArray(currentQuestion.answer)) {
-                isCorrect = currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(lowerUserAnswer);
-            } else {
-                isCorrect = lowerUserAnswer === currentQuestion.answer.toLowerCase().trim();
-            }
+            const isCorrect = Array.isArray(currentQuestion.answer)
+                ? currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(lowerUserAnswer)
+                : lowerUserAnswer === currentQuestion.answer.toLowerCase().trim();
 
             currentQuestion.userAnswer = userAnswer;
             currentQuestion.answered = true;
@@ -489,7 +498,8 @@
                 feedbackEl.classList.add('text-green-600', 'animate-pulse-once');
                 feedbackEl.classList.remove('text-red-600');
             } else {
-                feedbackEl.textContent = `Incorrect! The correct answer was: ${Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer}`;
+                const correctAnswers = Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer;
+                feedbackEl.textContent = `Incorrect! The correct answer was: ${correctAnswers}`;
                 feedbackEl.classList.add('text-red-600', 'animate-pulse-once');
                 feedbackEl.classList.remove('text-green-600');
             }
@@ -499,10 +509,14 @@
             if (currentQuestion.type === 'multiple-choice') {
                 Array.from(optionsContainer.children).forEach(button => {
                     button.disabled = true;
-                    if (Array.isArray(currentQuestion.answer) ? currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(button.textContent.toLowerCase().trim()) : button.textContent.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim()) {
+                    const isCorrectOption = Array.isArray(currentQuestion.answer)
+                        ? currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(button.textContent.toLowerCase().trim())
+                        : button.textContent.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim();
+                    
+                    if (isCorrectOption) {
                          button.classList.add('correct');
                     }
-                    if (button.textContent === userAnswer && !isCorrect) {
+                    if (button.textContent.toLowerCase().trim() === lowerUserAnswer && !isCorrect) {
                         button.classList.add('incorrect');
                     }
                 });
@@ -539,45 +553,55 @@
             resultsScreen.classList.remove('hidden');
             finalScoreEl.textContent = `${score} / ${currentQuestions.length}`;
             const percentage = (score / currentQuestions.length) * 100;
-            if (percentage >= 90) {
+            
+            // Check for double flame criteria
+            const totalQuestions = currentQuestions.length;
+            const isPerfectScore = score === totalQuestions;
+            const isHighScore = (totalQuestions === 10 && score >= 9) || (totalQuestions === 20 && score >= 18);
+
+            if (isPerfectScore || isHighScore) {
+                flameLeftEl.classList.remove('hidden');
+                flameRightEl.classList.remove('hidden');
                 congratulatoryMessageEl.textContent = "Fantastic! You've mastered this subject. Great work!";
                 congratulatoryMessageEl.classList.remove('hidden');
             } else if (percentage >= 75) {
+                flameLeftEl.classList.add('hidden');
+                flameRightEl.classList.add('hidden');
                 congratulatoryMessageEl.textContent = "You're on fire! You're almost there! Keep going!";
                 congratulatoryMessageEl.classList.remove('hidden');
             } else {
+                flameLeftEl.classList.add('hidden');
+                flameRightEl.classList.add('hidden');
                 congratulatoryMessageEl.classList.add('hidden');
             }
         }
 
         function updateProgressBar() {
             const totalQuestions = currentQuestions.length;
-            let progress;
-
-            // On the final question, the bar shows the score percentage.
-            if (currentQuestionIndex + 1 === totalQuestions) {
-                progress = (score / totalQuestions) * 100;
-            } else {
-                // Otherwise, the bar shows the number of questions answered.
-                progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
-            }
             
+            // Progress bar calculation
+            const progress = (currentQuestionIndex / totalQuestions) * 100;
             progressBarEl.style.width = `${progress}%`;
             
-            // Logic to show and animate the fire flame
-            const questionsAnswered = currentQuestionIndex + 1;
-            const currentPercentage = (score / questionsAnswered) * 100;
+            // Logic for a single fire flame during the quiz
+            const currentScore = score;
             
-            let showFlame = false;
-            
-            if (questionsAnswered >= 4 && currentPercentage >= 80) {
-                showFlame = true;
+            if (!hasFlame) {
+                // The single flame appears if the user reaches a certain score threshold
+                if (totalQuestions === 5 && currentScore >= 4) {
+                    hasFlame = true;
+                } else if (totalQuestions === 10 && currentScore >= 8) {
+                    hasFlame = true;
+                } else if (totalQuestions === 20 && currentScore >= 15) {
+                    hasFlame = true;
+                }
             }
             
-            if (showFlame) {
+            if (hasFlame) {
                 fireFlameEl.classList.remove('hidden');
-                // Calculate the scale based on the number of correct answers
-                const flameScale = 1 + (score - Math.floor(questionsAnswered * 0.8)) * 0.1;
+                // Scale it up based on how many correct answers past the threshold
+                let threshold = totalQuestions === 5 ? 4 : (totalQuestions === 10 ? 8 : 15);
+                const flameScale = 1 + (currentScore - threshold) * 0.1;
                 fireFlameEl.style.setProperty('--flame-scale', flameScale);
             } else {
                 fireFlameEl.classList.add('hidden');
@@ -591,7 +615,7 @@
         easyModeBtn.addEventListener('click', () => startQuiz('easy'));
         hardModeBtn.addEventListener('click', () => startQuiz('hard'));
         submitAnswerBtn.addEventListener('click', () => {
-            handleAnswer(shortAnswerInput.value.trim());
+            handleAnswer(shortAnswerInput.value);
         });
         nextQuestionBtn.addEventListener('click', () => {
              if (currentQuestionIndex + 1 === currentQuestions.length) {
@@ -620,4 +644,3 @@
 
 </body>
 </html>
-
