@@ -1,395 +1,623 @@
-<!DOCTYPE html>  
-<html lang="en">  
-<head>  
-    <meta charset="UTF-8">  
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>Interactive Quiz</title>  
-    <!-- Use Tailwind CSS for rapid styling -->  
-    <script src="https://cdn.tailwindcss.com"></script>  
-    <style>  
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');  
-        body {  
-            font-family: 'Inter', sans-serif;  
-            background-color: #f3f4f6;  
-            display: flex;  
-            justify-content: center;  
-            align-items: center;  
-            min-height: 100vh;  
-            transition: background-color 0.3s ease;  
-        }  
-        .quiz-container {  
-            background-color: white;  
-            padding: 2.5rem;  
-            border-radius: 1rem;  
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);  
-            width: 100%;  
-            max-width: 500px;  
-            transition: background-color 0.3s ease, color 0.3s ease;  
-        }  
-        .dark-mode {  
-            background-color: #1a202c;  
-            color: #e2e8f0;  
-        }  
-        .dark-mode .quiz-container {  
-            background-color: #2d3748;  
-            color: #e2e8f0;  
-        }  
-        .dark-mode .quiz-container h1, .dark-mode .quiz-container h2 {  
-            color: #f7fafc;  
-        }  
-        .dark-mode .quiz-container p, .dark-mode .quiz-container label {  
-            color: #cbd5e0;  
-        }  
-        .dark-mode .bg-gray-200 {  
-            background-color: #4a5568;  
-            color: #e2e8f0;  
-        }  
-        .dark-mode .hover\:bg-gray-300:hover {  
-            background-color: #616e80;  
-        }  
-        .dark-mode #short-answer-input {  
-            background-color: #4a5568;  
-            color: #f7fafc;  
-            border-color: #616e80;  
-        }  
-        .dark-mode #dark-mode-toggle {  
-            background-color: #4a5568;  
-            color: #f7fafc;  
-        }  
-        .dark-mode #question-count-select {  
-            background-color: #4a5568;  
-            border-color: #616e80;  
-            color: #e2e8f0;  
-        }  
-        .progress-bar-container {  
-            width: 100%;  
-            height: 8px;  
-            background-color: #e5e7eb;  
-            border-radius: 9999px;  
-            margin-bottom: 1.5rem;  
-            overflow: hidden;  
-        }  
-        .progress-bar {  
-            height: 100%;  
-            background-color: #3b82f6;  
-            transition: width 0.3s ease-in-out;  
-        }  
-    </style>  
-</head>  
-<body>  
-  
-<div class="quiz-container">  
-    <div id="start-screen" class="text-center transition-opacity duration-500 ease-in-out">  
-        <h1 class="text-2xl font-bold mb-2 text-gray-800">PSCI 71101 Longitudinal Lab I Quiz 2</h1>  
-        <p class="text-gray-600 mb-4">A Study Tool for PSCI 71101 Longitudinal Lab I</p>  
-        <p class="text-gray-600 mb-8">Test your knowledge of Top Drugs List with different modes. Each mode has a question pool of 20. Select your quiz length below to begin.</p>  
-        <div class="flex flex-col space-y-4">  
-            <button id="dark-mode-toggle" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full shadow-md hover:bg-gray-300 focus:outline-none transition-colors duration-200">Toggle Dark Mode</button>  
-              
-            <div class="flex flex-col items-center space-y-2 mt-4">  
-                <label for="question-count-select" class="text-gray-700 font-semibold">Select Quiz Length:</label>  
-                <select id="question-count-select" class="bg-gray-200 border border-gray-300 text-gray-800 rounded-lg p-2 w-full max-w-[200px] focus:outline-none focus:border-blue-500 transition-colors duration-200">  
-                    <option value="5">5 Questions</option>  
-                    <option value="10">10 Questions</option>  
-                    <option value="20">20 Questions</option>  
-                </select>  
-            </div>  
-              
-            <button id="easy-mode" class="bg-blue-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors duration-200">Easy Mode</button>  
-            <button id="hard-mode" class="bg-purple-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-75 transition-colors duration-200">Hard Mode</button>  
-        </div>  
-    </div>  
-  
-    <div id="quiz-screen" class="hidden transition-opacity duration-500 ease-in-out">  
-        <div class="flex justify-between items-center mb-4">  
-            <p class="text-gray-500 text-sm">Question <span id="question-number">1</span> of <span id="total-questions"></span></p>  
-            <p class="text-gray-500 text-sm">Score: <span id="score">0</span></p>  
-        </div>  
-        <div class="progress-bar-container">  
-            <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>  
-        </div>  
-        <h2 id="question-text" class="text-xl font-semibold mb-6 text-gray-700"></h2>  
-        <div id="options-container" class="grid grid-cols-1 gap-4">  
-            <!-- Multiple choice options will be injected here -->  
-        </div>  
-        <div id="short-answer-container" class="hidden">  
-            <input type="text" id="short-answer-input" placeholder="Type your answer here..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition-colors duration-200">  
-            <button id="submit-answer" class="mt-4 w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors duration-200">Submit</button>  
-        </div>  
-        <div id="feedback" class="mt-4 text-center text-sm"></div>  
-        <button id="next-question" class="hidden mt-6 w-full bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 transition-colors duration-200">Next Question</button>  
-        <div class="flex justify-between mt-4">  
-            <button id="prev-question" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-gray-400 focus:outline-none transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>  
-            <button id="main-menu" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-red-600 focus:outline-none transition-colors duration-200">Main Menu</button>  
-        </div>  
-    </div>  
-  
-    <div id="results-screen" class="hidden text-center transition-opacity duration-500 ease-in-out">  
-        <h2 class="text-3xl font-bold mb-4 text-gray-800">Quiz Complete!</h2>  
-        <p class="text-gray-600 mb-2">Your final score is:</p>  
-        <p id="final-score" class="text-5xl font-extrabold text-blue-600 mb-6"></p>  
-        <p id="congratulatory-message" class="text-xl font-semibold text-green-600 mb-8 hidden"></p>  
-        <button id="restart-quiz" class="bg-purple-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-75 transition-colors duration-200">Restart Quiz</button>  
-    </div>  
-</div>  
-  
-<script>  
-    const allQuestions = {  
-        easy: [  
-            { question: "What is the brand name of Hydralazine?", type: "multiple-choice", options: ["Diovan", "Vasotec", "Apresoline", "Catapres"], answer: "Apresoline" },  
-            { question: "What is the generic name of the antihypertensive branded as Diovan?", type: "short-answer", answer: "Valsartan" },  
-            { question: "Which of the following drugs is a Vasodilator?", type: "multiple-choice", options: ["Spironolactone", "Hydralazine", "Metoprolol", "Valsartan"], answer: "Hydralazine" },  
-            { question: "What is the brand name of Olmesartan?", type: "short-answer", answer: "Benicar" },  
-            { question: "What drug class does Enalapril belong to?", type: "multiple-choice", options: ["Beta Blocker", "ACE Inhibitor", "ARB", "Diuretic"], answer: "ACE Inhibitor" },  
-            { question: "What is the generic name of Cardizem?", type: "short-answer", answer: "Diltiazem" },  
-            { question: "Which of the following is a brand name for Metoprolol?", type: "multiple-choice", options: ["Lopressor", "Inderal", "Toprol XL", "Tenormin"], answer: ["Lopressor", "Toprol XL"] },  
-            { question: "Spironolactone is a Potassium-Sparing Diuretic and also belongs to which other drug class?", type: "multiple-choice", options: ["ACE Inhibitor", "Aldosterone Receptor Antagonist", "Beta Blocker", "ARB"], answer: "Aldosterone Receptor Antagonist" },  
-            { question: "What is the generic name of Catapres?", type: "short-answer", answer: "Clonidine" },  
-            { question: "Which drug is classified as a Thiazide Diuretic?", type: "multiple-choice", options: ["Spironolactone", "Metoprolol", "Chlorthalidone", "Verapamil"], answer: "Chlorthalidone" },  
-            { question: "Name one brand of Verapamil.", type: "short-answer", answer: ["Calan", "Verelan"] },  
-            { question: "Both Valsartan and Olmesartan belong to which drug class?", type: "multiple-choice", options: ["Beta Blockers", "Diuretics", "Alpha-2 Agonists", "ARBs"], answer: "ARBs" },  
-            { question: "What is the generic name of Aldactone?", type: "short-answer", answer: "Spironolactone" },  
-            { question: "Which of the following is a Beta Blocker?", type: "multiple-choice", options: ["Enalapril", "Diltiazem", "Metoprolol", "Clonidine"], answer: "Metoprolol" },  
-            { question: "What is the generic name of Vasotec?", type: "short-answer", answer: "Enalapril" },  
-            { question: "Which of the following drugs can treat both hypertension and angina by slowing heart rate?", type: "multiple-choice", options: ["Hydralazine", "Verapamil", "Spironolactone", "Clonidine"], answer: "Verapamil" },  
-            { question: "What is the generic name of Toprol XL (extended-release formulation)?", type: "short-answer", answer: "Metoprolol" },  
-            { question: "Which drug has a brand name containing 'cardio,' suggesting it is related to the heart?", type: "multiple-choice", options: ["Diovan", "Vasotec", "Cardizem", "Apresoline"], answer: "Cardizem" },  
-            { question: "What is the generic name of Benicar?", type: "short-answer", answer: "Olmesartan" },  
-            { question: "Which drug class lowers blood pressure by increasing sodium and water excretion?", type: "multiple-choice", options: ["ACE Inhibitors", "Beta Blockers", "Diuretics", "Calcium Channel Blockers"], answer: "Diuretics" }  
-        ],  
-        hard: [  
-            { question: "Which drug directly relaxes arteriolar smooth muscle to reduce peripheral vascular resistance?", type: "short-answer", answer: "Hydralazine" },  
-            { question: "Valsartan works by blocking the binding of which substance to the AT1 receptor?", type: "multiple-choice", options: ["Angiotensin I", "Angiotensin II", "Aldosterone", "Calcium ions"], answer: "Angiotensin II" },  
-            { question: "What is the primary mechanism of action of Enalapril?", type: "multiple-choice", options: ["Inhibits the conversion of angiotensin I to angiotensin II", "Blocks beta-1 adrenergic receptors", "Increases sodium reabsorption in distal tubules", "Stimulates alpha-2 adrenergic receptors"], answer: "Inhibits the conversion of angiotensin I to angiotensin II" },  
-            { question: "The mechanism of action of Clonidine involves stimulating which receptors in the brainstem?", type: "multiple-choice", options: ["Beta-1 Adrenergic", "Alpha-2 Adrenergic", "AT1", "Beta-2 Adrenergic"], answer: "Alpha-2 Adrenergic" },  
-            { question: "What effect does Diltiazem have on the heart?", type: "multiple-choice", options: ["Increases heart rate", "No effect", "Reduces heart rate and contractility", "Causes irregular heart rate"], answer: "Reduces heart rate and contractility" },  
-            { question: "Which two drugs belong to the same drug class and share the same mechanism of action?", type: "multiple-choice", options: ["Hydralazine and Enalapril", "Valsartan and Olmesartan", "Metoprolol and Spironolactone", "Clonidine and Diltiazem"], answer: "Valsartan and Olmesartan" },  
-            { question: "What is the primary function of a Beta Blocker such as Metoprolol?", type: "multiple-choice", options: ["Inhibits calcium influx", "Increases sympathetic outflow", "Decreases heart rate and contractility", "Relaxes vascular smooth muscle"], answer: "Decreases heart rate and contractility" },  
-            { question: "Spironolactone’s mechanism of action involves competing with which hormone in the distal renal tubules?", type: "multiple-choice", options: ["Renin", "Angiotensin II", "Aldosterone", "Angiotensin I"], answer: "Aldosterone" },  
-            { question: "How does Chlorthalidone increase sodium and water excretion?", type: "multiple-choice", options: ["By blocking AT1 receptors", "By inhibiting sodium reabsorption in the distal tubules", "By stimulating alpha-2 receptors", "By relaxing vascular smooth muscle"], answer: "By inhibiting sodium reabsorption in the distal tubules" },  
-            { question: "Unlike Metoprolol, Verapamil inhibits the influx of which ions into cardiac and vascular smooth muscle?", type: "multiple-choice", options: ["Sodium", "Calcium", "Chloride", "Potassium"], answer: "Calcium" },  
-            { question: "Valsartan prevents vasoconstriction by blocking which specific receptor?", type: "short-answer", answer: "AT1 receptor" },  
-            { question: "Which drug’s mechanism of action involves reducing sympathetic outflow from the brainstem?", type: "multiple-choice", options: ["Enalapril", "Diltiazem", "Clonidine", "Spironolactone"], answer: "Clonidine" },  
-            { question: "What is the function of the enzyme inhibited by Enalapril (ACE)?", type: "multiple-choice", options: ["Converts angiotensin II to angiotensin I", "Converts angiotensin I to angiotensin II", "Increases heart rate", "Excretes sodium and water"], answer: "Converts angiotensin I to angiotensin II" },  
-            { question: "The mechanisms of Spironolactone and Chlorthalidone both result in increased excretion of what?", type: "multiple-choice", options: ["Potassium and chloride", "Sodium and water", "Calcium and magnesium", "Aldosterone and renin"], answer: "Sodium and water" },  
-            { question: "Which of the following is a Beta Blocker that selectively blocks beta-1 adrenergic receptors?", type: "multiple-choice", options: ["Clonidine", "Spironolactone", "Metoprolol", "Enalapril"], answer: "Metoprolol" },  
-            { question: "Inhibition of ACE by Enalapril results in reduced levels of which substance?", type: "multiple-choice", options: ["Aldosterone", "Angiotensin II", "Bradykinin", "Renin"], answer: "Angiotensin II" },  
-            { question: "The difference in mechanism between Valsartan and Enalapril is that Valsartan directly ____, while Enalapril ____.", type: "multiple-choice", options: ["Blocks AT1 receptors; inhibits ACE", "Inhibits ACE; blocks AT1 receptors", "Stimulates beta-1 receptors; stimulates alpha-2 receptors", "Increases sympathetic outflow; decreases sympathetic outflow"], answer: "Blocks AT1 receptors; inhibits ACE" },  
-            { question: "Which Calcium Channel Blocker most strongly reduces heart rate and AV node conduction (not primarily used for peripheral vasodilation)?", type: "multiple-choice", options: ["Verapamil", "Diltiazem", "Amlodipine", "Nifedipine"], answer: "Verapamil" },  
-            { question: "The therapeutic effect of Spironolactone includes prevention of potassium loss, making it a ____ diuretic (fill in the blank).", type: "short-answer", answer: "Potassium-sparing" },  
-            { question: "What is the brand name of the combination drug containing both an ACE inhibitor and a diuretic?", type: "multiple-choice", options: ["Vasotec", "Diovan", "Vaseretic", "Aldactone"], answer: "Vaseretic" }  
-        ]  
-    };  
-  
-    document.addEventListener('DOMContentLoaded', () => {  
-        // --- DOM ELEMENTS ---  
-        const startScreen = document.getElementById('start-screen');  
-        const darkModeToggle = document.getElementById('dark-mode-toggle');  
-        const easyModeBtn = document.getElementById('easy-mode');  
-        const hardModeBtn = document.getElementById('hard-mode');  
-        const questionCountSelect = document.getElementById('question-count-select');  
-        const quizScreen = document.getElementById('quiz-screen');  
-        const questionNumberEl = document.getElementById('question-number');  
-        const totalQuestionsEl = document.getElementById('total-questions');  
-        const scoreEl = document.getElementById('score');  
-        const questionTextEl = document.getElementById('question-text');  
-        const optionsContainer = document.getElementById('options-container');  
-        const shortAnswerContainer = document.getElementById('short-answer-container');  
-        const shortAnswerInput = document.getElementById('short-answer-input');  
-        const submitAnswerBtn = document.getElementById('submit-answer');  
-        const feedbackEl = document.getElementById('feedback');  
-        const nextQuestionBtn = document.getElementById('next-question');  
-        const prevQuestionBtn = document.getElementById('prev-question');  
-        const mainMenuBtn = document.getElementById('main-menu');  
-        const resultsScreen = document.getElementById('results-screen');  
-        const finalScoreEl = document.getElementById('final-score');  
-        const congratulatoryMessageEl = document.getElementById('congratulatory-message');  
-        const restartQuizBtn = document.getElementById('restart-quiz');  
-        const progressBarEl = document.getElementById('progress-bar');  
-  
-        // --- GAME STATE VARIABLES ---  
-        let currentQuestions = [];  
-        let currentQuestionIndex = 0;  
-        let score = 0;  
-  
-        // --- FUNCTIONS ---  
-        function shuffleArray(array) {  
-            for (let i = array.length - 1; i > 0; i--) {  
-                const j = Math.floor(Math.random() * (i + 1));  
-                [array[i], array[j]] = [array[j], array[i]];  
-            }  
-            return array;  
-        }  
-  
-        function startQuiz(difficulty) {  
-            const count = parseInt(questionCountSelect.value, 10);  
-            const selectedQuestions = allQuestions[difficulty];  
-            const shuffledQuestions = shuffleArray([...selectedQuestions]);  
-            currentQuestions = shuffledQuestions.slice(0, count).map(q => ({ ...q, answered: false, correct: false, userAnswer: null }));  
-              
-            currentQuestionIndex = 0;  
-            score = 0;  
-            questionNumberEl.textContent = 1;  
-            totalQuestionsEl.textContent = currentQuestions.length;  
-            scoreEl.textContent = score;  
-  
-            startScreen.classList.add('hidden');  
-            quizScreen.classList.remove('hidden');  
-            prevQuestionBtn.disabled = true;  
-  
-            loadQuestion();  
-        }  
-  
-        function loadQuestion() {  
-            if (currentQuestionIndex < 0 || currentQuestionIndex >= currentQuestions.length) {  
-                return;  
-            }  
-            const currentQuestion = currentQuestions[currentQuestionIndex];  
-            questionNumberEl.textContent = currentQuestionIndex + 1;  
-            questionTextEl.textContent = currentQuestion.question;  
-            feedbackEl.textContent = '';  
-            nextQuestionBtn.classList.add('hidden');  
-            optionsContainer.innerHTML = '';  
-            shortAnswerInput.value = '';  
-              
-            prevQuestionBtn.disabled = currentQuestionIndex === 0;  
-  
-            if (currentQuestion.type === 'multiple-choice') {  
-                shortAnswerContainer.classList.add('hidden');  
-                optionsContainer.classList.remove('hidden');  
-  
-                currentQuestion.options.forEach(option => {  
-                    const button = document.createElement('button');  
-                    button.textContent = option;  
-                    button.classList.add('bg-gray-200', 'text-gray-800', 'font-semibold', 'py-3', 'px-6', 'rounded-lg', 'shadow-md', 'hover:bg-gray-300', 'focus:outline-none', 'transition-colors', 'duration-200');  
-                    button.onclick = () => handleAnswer(option);  
-                    optionsContainer.appendChild(button);  
-                });  
-            } else if (currentQuestion.type === 'short-answer') {  
-                optionsContainer.classList.add('hidden');  
-                shortAnswerContainer.classList.remove('hidden');  
-            }  
-              
-            // Re-apply state if question was already answered  
-            if (currentQuestion.answered) {  
-                const userAnswer = currentQuestion.userAnswer;  
-                checkAnswer(userAnswer);  
-                if (currentQuestion.type === 'short-answer') {  
-                    shortAnswerInput.value = userAnswer;  
-                }  
-                nextQuestionBtn.classList.remove('hidden');  
-                shortAnswerInput.disabled = true;  
-                submitAnswerBtn.disabled = true;  
-                if (currentQuestion.type === 'multiple-choice') {  
-                    Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);  
-                }  
-            } else {  
-                shortAnswerInput.disabled = false;  
-                submitAnswerBtn.disabled = false;  
-            }  
-              
-            updateProgressBar();  
-        }  
-          
-        function handleAnswer(userAnswer) {  
-            const currentQuestion = currentQuestions[currentQuestionIndex];  
-            if (!currentQuestion.answered) {  
-                checkAnswer(userAnswer);  
-                currentQuestion.userAnswer = userAnswer;  
-            }  
-            nextQuestionBtn.classList.remove('hidden');  
-            if (currentQuestion.type === 'multiple-choice') {  
-                Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);  
-            } else {  
-                shortAnswerInput.disabled = true;  
-                submitAnswerBtn.disabled = true;  
-            }  
-        }  
-  
-        function checkAnswer(userAnswer) {  
-            const currentQuestion = currentQuestions[currentQuestionIndex];  
-              
-            let isCorrect = false;  
-            if (Array.isArray(currentQuestion.answer)) {  
-                isCorrect = currentQuestion.answer.map(a => a.toLowerCase()).includes(userAnswer.toLowerCase());  
-            } else {  
-                isCorrect = userAnswer.toLowerCase() === currentQuestion.answer.toLowerCase();  
-            }  
-  
-            if (isCorrect) {  
-                if (!currentQuestion.correct) {  
-                    score++;  
-                    currentQuestion.correct = true;  
-                }  
-                feedbackEl.textContent = 'Correct!';  
-                feedbackEl.classList.add('text-green-600');  
-                feedbackEl.classList.remove('text-red-600');  
-            } else {  
-                feedbackEl.textContent = `Incorrect! The correct answer was: ${Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer}`;  
-                feedbackEl.classList.add('text-red-600');  
-                feedbackEl.classList.remove('text-green-600');  
-            }  
-            scoreEl.textContent = score;  
-            currentQuestion.answered = true;  
-        }  
-  
-        function nextQuestion() {  
-            currentQuestionIndex++;  
-            if (currentQuestionIndex < currentQuestions.length) {  
-                loadQuestion();  
-            } else {  
-                showResults();  
-            }  
-        }  
-          
-        function prevQuestion() {  
-            currentQuestionIndex--;  
-            loadQuestion();  
-        }  
-          
-        function goToMainMenu() {  
-            quizScreen.classList.add('hidden');  
-            resultsScreen.classList.add('hidden');  
-            startScreen.classList.remove('hidden');  
-        }  
-  
-        function showResults() {  
-            quizScreen.classList.add('hidden');  
-            resultsScreen.classList.remove('hidden');  
-            finalScoreEl.textContent = `${score} / ${currentQuestions.length}`;  
-              
-            const percentage = (score / currentQuestions.length) * 100;  
-            if (percentage >= 90) {  
-                congratulatoryMessageEl.textContent = "Fantastic! You've mastered this subject. Great work!";  
-                congratulatoryMessageEl.classList.remove('hidden');  
-            } else {  
-                congratulatoryMessageEl.classList.add('hidden');  
-            }  
-        }  
-          
-        function updateProgressBar() {  
-            const progress = (currentQuestionIndex / currentQuestions.length) * 100;  
-            progressBarEl.style.width = `${progress}%`;  
-        }  
-  
-        // --- EVENT LISTENERS ---  
-        darkModeToggle.addEventListener('click', () => {  
-            document.body.classList.toggle('dark-mode');  
-        });  
-        easyModeBtn.addEventListener('click', () => startQuiz('easy'));  
-        hardModeBtn.addEventListener('click', () => startQuiz('hard'));  
-        submitAnswerBtn.addEventListener('click', () => {  
-            handleAnswer(shortAnswerInput.value.trim());  
-        });  
-        nextQuestionBtn.addEventListener('click', nextQuestion);  
-        prevQuestionBtn.addEventListener('click', prevQuestion);  
-        mainMenuBtn.addEventListener('click', goToMainMenu);  
-        restartQuizBtn.addEventListener('click', () => {  
-            resultsScreen.classList.add('hidden');  
-            startScreen.classList.remove('hidden');  
-        });  
-    });  
-</script>  
-  
-</body>  
-</html>  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Quiz</title>
+    <!-- Use Tailwind CSS for rapid styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s ease;
+        }
+        .quiz-container {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 500px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .dark-mode {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .dark-mode .quiz-container {
+            background-color: #2d3748;
+            color: #e2e8f0;
+        }
+        .dark-mode .quiz-container h1, .dark-mode .quiz-container h2 {
+            color: #f7fafc;
+        }
+        .dark-mode .quiz-container p, .dark-mode .quiz-container label {
+            color: #cbd5e0;
+        }
+        .dark-mode .bg-gray-200 {
+            background-color: #4a5568;
+            color: #e2e8f0;
+        }
+        .dark-mode .hover\:bg-gray-300:hover {
+            background-color: #616e80;
+        }
+        .dark-mode #short-answer-input {
+            background-color: #4a5568;
+            color: #f7fafc;
+            border-color: #616e80;
+        }
+        .dark-mode #dark-mode-toggle {
+            background-color: #4a5568;
+            color: #f7fafc;
+        }
+        .dark-mode #question-count-select {
+            background-color: #4a5568;
+            border-color: #616e80;
+            color: #e2e8f0;
+        }
+        .progress-bar-container {
+            position: relative;
+            width: 100%;
+            height: 8px;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            margin-bottom: 1.5rem;
+            overflow: visible;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #3b82f6;
+            transition: width 0.3s ease-in-out;
+            position: relative;
+            z-index: 1;
+            border-radius: 9999px; /* Ensure rounded corners */
+        }
+        .fire-flame {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%) translateX(100%);
+            font-size: 1.5rem;
+            animation: pulse-fire 1s infinite alternate;
+            z-index: 2;
+        }
+        .option-button.correct {
+            background-color: #10B981 !important; /* Green 500 */
+            color: white;
+        }
+        .option-button.incorrect {
+            background-color: #EF4444 !important; /* Red 500 */
+            color: white;
+        }
+        .animate-pulse-once {
+          animation: pulse-once 1s ease-in-out;
+        }
+
+        @keyframes pulse-once {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        @keyframes pulse-fire {
+            from { transform: translateY(-50%) translateX(100%) scale(var(--flame-scale, 1)); }
+            to { transform: translateY(-50%) translateX(100%) scale(calc(var(--flame-scale, 1) + 0.1)); }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="start-screen" class="text-center transition-opacity duration-500 ease-in-out">
+        <h1 class="text-2xl font-bold mb-2 text-gray-800">PSCI 71101 Longitudinal Lab I Quiz 2</h1>
+        <p class="text-gray-600 mb-4">A Study Tool for PSCI 71101 Longitudinal Lab I</p>
+        <p class="text-gray-600 mb-8">Test your knowledge of Top Drugs List with different modes. Each mode has a question pool of 20. Select your quiz length below to begin.</p>
+        <div class="flex flex-col space-y-4">
+            <button id="dark-mode-toggle" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full shadow-md hover:bg-gray-300 focus:outline-none transition-colors duration-200">Toggle Dark Mode</button>
+            <div id="user-info" class="text-sm text-gray-500 mt-2"></div>
+            <div class="flex flex-col items-center space-y-2 mt-4">
+                <label for="question-count-select" class="text-gray-700 font-semibold">Select Quiz Length:</label>
+                <select id="question-count-select" class="bg-gray-200 border border-gray-300 text-gray-800 rounded-lg p-2 w-full max-w-[200px] focus:outline-none focus:border-blue-500 transition-colors duration-200">
+                    <option value="5">5 Questions</option>
+                    <option value="10">10 Questions</option>
+                    <option value="20">20 Questions</option>
+                </select>
+            </div>
+            <button id="easy-mode" class="bg-blue-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors duration-200">Easy Mode</button>
+            <button id="hard-mode" class="bg-purple-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-75 transition-colors duration-200">Hard Mode</button>
+        </div>
+    </div>
+
+    <div id="quiz-screen" class="hidden transition-opacity duration-500 ease-in-out">
+        <div class="flex justify-between items-center mb-4">
+            <p class="text-gray-500 text-sm">Question <span id="question-number">1</span> of <span id="total-questions"></span></p>
+            <p class="text-gray-500 text-sm">Score: <span id="score">0</span></p>
+        </div>
+        <div class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar" style="width: 0%;">
+                <span id="fire-flame" class="fire-flame hidden" style="--flame-scale: 1;">🔥</span>
+            </div>
+        </div>
+        <h2 id="question-text" class="text-xl font-semibold mb-6 text-gray-700"></h2>
+        <div id="options-container" class="grid grid-cols-1 gap-4">
+            <!-- Multiple choice options will be injected here -->
+        </div>
+        <div id="short-answer-container" class="hidden">
+            <input type="text" id="short-answer-input" placeholder="Type your answer here..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition-colors duration-200">
+            <button id="submit-answer" class="mt-4 w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors duration-200">Submit</button>
+        </div>
+        <div id="feedback" class="mt-4 text-center text-sm"></div>
+        <button id="next-question" class="hidden mt-6 w-full bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 transition-colors duration-200">Next Question</button>
+        <div class="flex justify-between mt-4">
+            <button id="prev-question" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-gray-400 focus:outline-none transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+            <button id="main-menu" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:bg-red-600 focus:outline-none transition-colors duration-200">Main Menu</button>
+        </div>
+    </div>
+
+    <div id="results-screen" class="hidden text-center transition-opacity duration-500 ease-in-out">
+        <h2 class="text-3xl font-bold mb-4 text-gray-800">Quiz Complete!</h2>
+        <p class="text-gray-600 mb-2">Your final score is:</p>
+        <p id="final-score" class="text-5xl font-extrabold text-blue-600 mb-6"></p>
+        <p id="congratulatory-message" class="text-xl font-semibold text-green-600 mb-8 hidden"></p>
+        <button id="restart-quiz" class="bg-purple-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-75 transition-colors duration-200">Restart Quiz</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, query, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    setLogLevel('debug');
+
+    // Firebase configuration from the environment
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    // --- Firebase Initialization ---
+    let app, auth, db, userId;
+
+    try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                document.getElementById('user-info').textContent = `User ID: ${userId}`;
+                console.log("Firebase Auth State Changed. User is signed in. UID:", userId);
+            } else {
+                console.log("Firebase Auth State Changed. No user signed in.");
+            }
+        });
+
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken)
+                .then(() => console.log("Signed in with custom token."))
+                .catch(error => {
+                    console.error("Custom token sign-in failed:", error);
+                    signInAnonymously(auth);
+                });
+        } else {
+            signInAnonymously(auth)
+                .then(() => console.log("Signed in anonymously."))
+                .catch(error => console.error("Anonymous sign-in failed:", error));
+        }
+
+    } catch (error) {
+        console.error("Firebase initialization failed:", error);
+    }
+
+    const allQuestions = {
+        easy: [
+            { question: "What is the brand name of Hydralazine?", type: "multiple-choice", options: ["Diovan", "Vasotec", "Apresoline", "Catapres"], answer: "Apresoline" },
+            { question: "What is the generic name of the antihypertensive branded as Diovan?", type: "short-answer", answer: "Valsartan" },
+            { question: "Which of the following drugs is a Vasodilator?", type: "multiple-choice", options: ["Spironolactone", "Hydralazine", "Metoprolol", "Valsartan"], answer: "Hydralazine" },
+            { question: "What is the brand name of Olmesartan?", type: "short-answer", answer: "Benicar" },
+            { question: "What drug class does Enalapril belong to?", type: "multiple-choice", options: ["Beta Blocker", "ACE Inhibitor", "ARB", "Diuretic"], answer: "ACE Inhibitor" },
+            { question: "What is the generic name of Cardizem?", type: "short-answer", answer: "Diltiazem" },
+            { question: "Which of the following is a brand name for Metoprolol?", type: "multiple-choice", options: ["Lopressor", "Inderal", "Toprol XL", "Tenormin"], answer: ["Lopressor", "Toprol XL"] },
+            { question: "Spironolactone is a Potassium-Sparing Diuretic and also belongs to which other drug class?", type: "multiple-choice", options: ["ACE Inhibitor", "Aldosterone Receptor Antagonist", "Beta Blocker", "ARB"], answer: "Aldosterone Receptor Antagonist" },
+            { question: "What is the generic name of Catapres?", type: "short-answer", answer: "Clonidine" },
+            { question: "Which drug is classified as a Thiazide Diuretic?", type: "multiple-choice", options: ["Spironolactone", "Metoprolol", "Chlorthalidone", "Verapamil"], answer: "Chlorthalidone" },
+            { question: "Name one brand of Verapamil.", type: "short-answer", answer: ["Calan", "Verelan"] },
+            { question: "Both Valsartan and Olmesartan belong to which drug class?", type: "multiple-choice", options: ["Beta Blockers", "Diuretics", "Alpha-2 Agonists", "ARBs"], answer: "ARBs" },
+            { question: "What is the generic name of Aldactone?", type: "short-answer", answer: "Spironolactone" },
+            { question: "Which of the following is a Beta Blocker?", type: "multiple-choice", options: ["Enalapril", "Diltiazem", "Metoprolol", "Clonidine"], answer: "Metoprolol" },
+            { question: "What is the generic name of Vasotec?", type: "short-answer", answer: "Enalapril" },
+            { question: "Which of the following drugs can treat both hypertension and angina by slowing heart rate?", type: "multiple-choice", options: ["Hydralazine", "Verapamil", "Spironolactone", "Clonidine"], answer: "Verapamil" },
+            { question: "What is the generic name of Toprol XL (extended-release formulation)?", type: "short-answer", answer: "Metoprolol" },
+            { question: "Which drug has a brand name containing 'cardio,' suggesting it is related to the heart?", type: "multiple-choice", options: ["Diovan", "Vasotec", "Cardizem", "Apresoline"], answer: "Cardizem" },
+            { question: "What is the generic name of Benicar?", type: "short-answer", answer: "Olmesartan" },
+            { question: "Which drug class lowers blood pressure by increasing sodium and water excretion?", type: "multiple-choice", options: ["ACE Inhibitors", "Beta Blockers", "Diuretics", "Calcium Channel Blockers"], answer: "Diuretics" },
+            
+            // New questions added below
+            { question: "The drug class Thiazide Diuretic is associated with which brand name?", type: "multiple-choice", options: ["Apresoline", "Aldactone", "Thalitone", "Diovan"], answer: "Thalitone" },
+            { question: "Which of these drugs works by selectively blocking beta-1 receptors?", type: "multiple-choice", options: ["Clonidine", "Metoprolol", "Enalapril", "Valsartan"], answer: "Metoprolol" },
+            { question: "What is the brand name for the generic drug Hydralazine?", type: "short-answer", answer: "Apresoline" },
+        ],
+        hard: [
+            { question: "Which drug directly relaxes arteriolar smooth muscle to reduce peripheral vascular resistance?", type: "short-answer", answer: "Hydralazine" },
+            { question: "Valsartan works by blocking the binding of which substance to the AT1 receptor?", type: "multiple-choice", options: ["Angiotensin I", "Angiotensin II", "Aldosterone", "Calcium ions"], answer: "Angiotensin II" },
+            { question: "What is the primary mechanism of action of Enalapril?", type: "multiple-choice", options: ["Inhibits the conversion of angiotensin I to angiotensin II", "Blocks beta-1 adrenergic receptors", "Increases sodium reabsorption in distal tubules", "Stimulates alpha-2 adrenergic receptors"], answer: "Inhibits the conversion of angiotensin I to angiotensin II" },
+            { question: "The mechanism of action of Clonidine involves stimulating which receptors in the brainstem?", type: "multiple-choice", options: ["Beta-1 Adrenergic", "Alpha-2 Adrenergic", "AT1", "Beta-2 Adrenergic"], answer: "Alpha-2 Adrenergic" },
+            { question: "What effect does Diltiazem have on the heart?", type: "multiple-choice", options: ["Increases heart rate", "No effect", "Reduces heart rate and contractility", "Causes irregular heart rate"], answer: "Reduces heart rate and contractility" },
+            { question: "Which two drugs belong to the same drug class and share the same mechanism of action?", type: "multiple-choice", options: ["Hydralazine and Enalapril", "Valsartan and Olmesartan", "Metoprolol and Spironolactone", "Clonidine and Diltiazem"], answer: "Valsartan and Olmesartan" },
+            { question: "What is the primary function of a Beta Blocker such as Metoprolol?", type: "multiple-choice", options: ["Inhibits calcium influx", "Increases sympathetic outflow", "Decreases heart rate and contractility", "Relaxes vascular smooth muscle"], answer: "Decreases heart rate and contractility" },
+            { question: "Spironolactone’s mechanism of action involves competing with which hormone in the distal renal tubules?", type: "multiple-choice", options: ["Renin", "Angiotensin II", "Aldosterone", "Angiotensin I"], answer: "Aldosterone" },
+            { question: "How does Chlorthalidone increase sodium and water excretion?", type: "multiple-choice", options: ["By blocking AT1 receptors", "By inhibiting sodium reabsorption in the distal tubules", "By stimulating alpha-2 receptors", "By relaxing vascular smooth muscle"], answer: "By inhibiting sodium reabsorption in the distal tubules" },
+            { question: "Unlike Metoprolol, Verapamil inhibits the influx of which ions into cardiac and vascular smooth muscle?", type: "multiple-choice", options: ["Sodium", "Calcium", "Chloride", "Potassium"], answer: "Calcium" },
+            { question: "Valsartan prevents vasoconstriction by blocking which specific receptor?", type: "short-answer", answer: "AT1 receptor" },
+            { question: "Which drug’s mechanism of action involves reducing sympathetic outflow from the brainstem?", type: "multiple-choice", options: ["Enalapril", "Diltiazem", "Clonidine", "Spironolactone"], answer: "Clonidine" },
+            { question: "What is the function of the enzyme inhibited by Enalapril (ACE)?", type: "multiple-choice", options: ["Converts angiotensin II to angiotensin I", "Converts angiotensin I to angiotensin II", "Increases heart rate", "Excretes sodium and water"], answer: "Converts angiotensin I to angiotensin II" },
+            { question: "The mechanisms of Spironolactone and Chlorthalidone both result in increased excretion of what?", type: "multiple-choice", options: ["Potassium and chloride", "Sodium and water", "Calcium and magnesium", "Aldosterone and renin"], answer: "Sodium and water" },
+            { question: "Which of the following is a Beta Blocker that selectively blocks beta-1 adrenergic receptors?", type: "multiple-choice", options: ["Clonidine", "Spironolactone", "Metoprolol", "Enalapril"], answer: "Metoprolol" },
+            { question: "Inhibition of ACE by Enalapril results in reduced levels of which substance?", type: "multiple-choice", options: ["Aldosterone", "Angiotensin II", "Bradykinin", "Renin"], answer: "Angiotensin II" },
+            { question: "The difference in mechanism between Valsartan and Enalapril is that Valsartan directly ____, while Enalapril ____.", type: "multiple-choice", options: ["Blocks AT1 receptors; inhibits ACE", "Inhibits ACE; blocks AT1 receptors", "Stimulates beta-1 receptors; stimulates alpha-2 receptors", "Increases sympathetic outflow; decreases sympathetic outflow"], answer: "Blocks AT1 receptors; inhibits ACE" },
+            { question: "Which Calcium Channel Blocker most strongly reduces heart rate and AV node conduction (not primarily used for peripheral vasodilation)?", type: "multiple-choice", options: ["Verapamil", "Diltiazem", "Amlodipine", "Nifedipine"], answer: "Verapamil" },
+            { question: "The therapeutic effect of Spironolactone includes prevention of potassium loss, making it a ____ diuretic (fill in the blank).", type: "short-answer", answer: "Potassium-sparing" },
+            { question: "What is the brand name of the combination drug containing both an ACE inhibitor and a diuretic?", type: "multiple-choice", options: ["Vasotec", "Diovan", "Vaseretic", "Aldactone"], answer: "Vaseretic" }
+        ]
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM ELEMENTS ---
+        const startScreen = document.getElementById('start-screen');
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const easyModeBtn = document.getElementById('easy-mode');
+        const hardModeBtn = document.getElementById('hard-mode');
+        const questionCountSelect = document.getElementById('question-count-select');
+        const quizScreen = document.getElementById('quiz-screen');
+        const questionNumberEl = document.getElementById('question-number');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const scoreEl = document.getElementById('score');
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const shortAnswerContainer = document.getElementById('short-answer-container');
+        const shortAnswerInput = document.getElementById('short-answer-input');
+        const submitAnswerBtn = document.getElementById('submit-answer');
+        const feedbackEl = document.getElementById('feedback');
+        const nextQuestionBtn = document.getElementById('next-question');
+        const prevQuestionBtn = document.getElementById('prev-question');
+        const mainMenuBtn = document.getElementById('main-menu');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        const congratulatoryMessageEl = document.getElementById('congratulatory-message');
+        const restartQuizBtn = document.getElementById('restart-quiz');
+        const progressBarEl = document.getElementById('progress-bar');
+        const fireFlameEl = document.getElementById('fire-flame');
+        const userInfoEl = document.getElementById('user-info');
+
+        // --- GAME STATE VARIABLES ---
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let quizMode = '';
+
+        // --- Firebase references
+        const userCollectionRef = (userId) => collection(db, 'artifacts', appId, 'users', userId, 'quizzes');
+
+        // --- FUNCTIONS ---
+        async function saveQuizState() {
+            if (!userId) {
+                console.error("User ID not available, cannot save state.");
+                return;
+            }
+            try {
+                const quizDocRef = doc(userCollectionRef(userId), 'currentQuiz');
+                await setDoc(quizDocRef, {
+                    questions: JSON.stringify(currentQuestions),
+                    currentQuestionIndex,
+                    score,
+                    quizMode,
+                    timestamp: serverTimestamp()
+                });
+            } catch (error) {
+                console.error("Failed to save quiz state:", error);
+            }
+        }
+
+        async function loadQuizState() {
+            if (!userId) {
+                console.error("User ID not available, cannot load state.");
+                return;
+            }
+            try {
+                const quizDocRef = doc(userCollectionRef(userId), 'currentQuiz');
+                const docSnap = await getDoc(quizDocRef);
+                if (docSnap.exists() && docSnap.data().questions) {
+                    const data = docSnap.data();
+                    currentQuestions = JSON.parse(data.questions);
+                    currentQuestionIndex = data.currentQuestionIndex;
+                    score = data.score;
+                    quizMode = data.quizMode;
+
+                    questionNumberEl.textContent = currentQuestionIndex + 1;
+                    totalQuestionsEl.textContent = currentQuestions.length;
+                    scoreEl.textContent = score;
+
+                    startScreen.classList.add('hidden');
+                    quizScreen.classList.remove('hidden');
+                    prevQuestionBtn.disabled = currentQuestionIndex === 0;
+
+                    loadQuestion();
+                    console.log("Quiz state loaded successfully.");
+                } else {
+                    console.log("No saved quiz state found.");
+                }
+            } catch (error) {
+                console.error("Failed to load quiz state:", error);
+            }
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function startQuiz(difficulty) {
+            quizMode = difficulty;
+            const count = parseInt(questionCountSelect.value, 10);
+            const selectedQuestions = allQuestions[difficulty];
+            const shuffledQuestions = shuffleArray(selectedQuestions);
+            currentQuestions = shuffledQuestions.slice(0, count).map(q => ({ ...q, answered: false, correct: false, userAnswer: null }));
+
+            currentQuestionIndex = 0;
+            score = 0;
+            questionNumberEl.textContent = 1;
+            totalQuestionsEl.textContent = currentQuestions.length;
+            scoreEl.textContent = score;
+            fireFlameEl.classList.add('hidden');
+            fireFlameEl.style.setProperty('--flame-scale', 1);
+
+            startScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            prevQuestionBtn.disabled = true;
+
+            loadQuestion();
+            saveQuizState();
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= currentQuestions.length) {
+                showResults();
+                return;
+            }
+            const currentQuestion = currentQuestions[currentQuestionIndex];
+            questionNumberEl.textContent = currentQuestionIndex + 1;
+            questionTextEl.textContent = currentQuestion.question;
+            feedbackEl.textContent = '';
+            
+            // Manage button visibility and text
+            prevQuestionBtn.disabled = currentQuestionIndex === 0;
+            nextQuestionBtn.classList.toggle('hidden', !currentQuestion.answered);
+            
+            if (currentQuestionIndex + 1 === currentQuestions.length) {
+                nextQuestionBtn.textContent = 'View Final Score';
+            } else {
+                nextQuestionBtn.textContent = 'Next Question';
+            }
+
+            optionsContainer.innerHTML = '';
+            shortAnswerInput.value = '';
+            
+            if (currentQuestion.type === 'multiple-choice') {
+                shortAnswerContainer.classList.add('hidden');
+                optionsContainer.classList.remove('hidden');
+                
+                currentQuestion.options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.textContent = option;
+                    button.classList.add('option-button', 'bg-gray-200', 'text-gray-800', 'font-semibold', 'py-3', 'px-6', 'rounded-lg', 'shadow-md', 'hover:bg-gray-300', 'focus:outline-none', 'transition-colors', 'duration-200');
+                    button.onclick = () => handleAnswer(option);
+
+                    if (currentQuestion.answered) {
+                        button.disabled = true;
+                        if (Array.isArray(currentQuestion.answer) ? currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(option.toLowerCase().trim()) : option.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim()) {
+                            button.classList.add('correct');
+                        }
+                        if (currentQuestion.userAnswer === option && !currentQuestion.correct) {
+                             button.classList.add('incorrect');
+                        }
+                    }
+                    optionsContainer.appendChild(button);
+                });
+            } else if (currentQuestion.type === 'short-answer') {
+                optionsContainer.classList.add('hidden');
+                shortAnswerContainer.classList.remove('hidden');
+                shortAnswerInput.disabled = currentQuestion.answered;
+                submitAnswerBtn.disabled = currentQuestion.answered;
+                if (currentQuestion.answered && currentQuestion.userAnswer) {
+                    shortAnswerInput.value = currentQuestion.userAnswer;
+                    if (currentQuestion.correct) {
+                         feedbackEl.textContent = 'Correct!';
+                         feedbackEl.classList.add('text-green-600');
+                         feedbackEl.classList.remove('text-red-600');
+                    } else {
+                         feedbackEl.textContent = `Incorrect! The correct answer was: ${Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer}`;
+                         feedbackEl.classList.add('text-red-600');
+                         feedbackEl.classList.remove('text-green-600');
+                    }
+                }
+            }
+            updateProgressBar();
+        }
+
+        function handleAnswer(userAnswer) {
+            const currentQuestion = currentQuestions[currentQuestionIndex];
+            if (currentQuestion.answered) {
+                return;
+            }
+
+            const lowerUserAnswer = userAnswer.toLowerCase().trim();
+            let isCorrect = false;
+
+            if (Array.isArray(currentQuestion.answer)) {
+                isCorrect = currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(lowerUserAnswer);
+            } else {
+                isCorrect = lowerUserAnswer === currentQuestion.answer.toLowerCase().trim();
+            }
+
+            currentQuestion.userAnswer = userAnswer;
+            currentQuestion.answered = true;
+            currentQuestion.correct = isCorrect;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.textContent = 'Correct!';
+                feedbackEl.classList.add('text-green-600', 'animate-pulse-once');
+                feedbackEl.classList.remove('text-red-600');
+            } else {
+                feedbackEl.textContent = `Incorrect! The correct answer was: ${Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer}`;
+                feedbackEl.classList.add('text-red-600', 'animate-pulse-once');
+                feedbackEl.classList.remove('text-green-600');
+            }
+
+            scoreEl.textContent = score;
+
+            if (currentQuestion.type === 'multiple-choice') {
+                Array.from(optionsContainer.children).forEach(button => {
+                    button.disabled = true;
+                    if (Array.isArray(currentQuestion.answer) ? currentQuestion.answer.map(a => a.toLowerCase().trim()).includes(button.textContent.toLowerCase().trim()) : button.textContent.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim()) {
+                         button.classList.add('correct');
+                    }
+                    if (button.textContent === userAnswer && !isCorrect) {
+                        button.classList.add('incorrect');
+                    }
+                });
+            } else {
+                shortAnswerInput.disabled = true;
+                submitAnswerBtn.disabled = true;
+            }
+
+            nextQuestionBtn.classList.remove('hidden');
+            updateProgressBar(); // Call updateProgressBar to show the flame after an answer
+            saveQuizState();
+        }
+        
+        function nextQuestion() {
+            currentQuestionIndex++;
+            loadQuestion();
+            saveQuizState();
+        }
+
+        function prevQuestion() {
+            currentQuestionIndex--;
+            loadQuestion();
+            saveQuizState();
+        }
+
+        function goToMainMenu() {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            finalScoreEl.textContent = `${score} / ${currentQuestions.length}`;
+            const percentage = (score / currentQuestions.length) * 100;
+            if (percentage >= 90) {
+                congratulatoryMessageEl.textContent = "Fantastic! You've mastered this subject. Great work!";
+                congratulatoryMessageEl.classList.remove('hidden');
+            } else if (percentage >= 75) {
+                congratulatoryMessageEl.textContent = "You're on fire! You're almost there! Keep going!";
+                congratulatoryMessageEl.classList.remove('hidden');
+            } else {
+                congratulatoryMessageEl.classList.add('hidden');
+            }
+        }
+
+        function updateProgressBar() {
+            const totalQuestions = currentQuestions.length;
+            let progress;
+
+            // On the final question, the bar shows the score percentage.
+            if (currentQuestionIndex + 1 === totalQuestions) {
+                progress = (score / totalQuestions) * 100;
+            } else {
+                // Otherwise, the bar shows the number of questions answered.
+                progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+            }
+            
+            progressBarEl.style.width = `${progress}%`;
+            
+            // Logic to show and animate the fire flame
+            const questionsAnswered = currentQuestionIndex + 1;
+            const currentPercentage = (score / questionsAnswered) * 100;
+            
+            let showFlame = false;
+            
+            if (questionsAnswered >= 4 && currentPercentage >= 80) {
+                showFlame = true;
+            }
+            
+            if (showFlame) {
+                fireFlameEl.classList.remove('hidden');
+                // Calculate the scale based on the number of correct answers
+                const flameScale = 1 + (score - Math.floor(questionsAnswered * 0.8)) * 0.1;
+                fireFlameEl.style.setProperty('--flame-scale', flameScale);
+            } else {
+                fireFlameEl.classList.add('hidden');
+            }
+        }
+        
+        // --- EVENT LISTENERS ---
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+        });
+        easyModeBtn.addEventListener('click', () => startQuiz('easy'));
+        hardModeBtn.addEventListener('click', () => startQuiz('hard'));
+        submitAnswerBtn.addEventListener('click', () => {
+            handleAnswer(shortAnswerInput.value.trim());
+        });
+        nextQuestionBtn.addEventListener('click', () => {
+             if (currentQuestionIndex + 1 === currentQuestions.length) {
+                showResults();
+            } else {
+                nextQuestion();
+            }
+        });
+        prevQuestionBtn.addEventListener('click', prevQuestion);
+        mainMenuBtn.addEventListener('click', goToMainMenu);
+        restartQuizBtn.addEventListener('click', () => {
+            resultsScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+
+        // Load saved state on page load if user is authenticated
+        if (initialAuthToken) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    loadQuizState();
+                }
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
+
